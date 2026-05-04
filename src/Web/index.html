@@ -55,6 +55,11 @@
                 this.maxDeltaMs = 100;
                 this.lastFrameTime = performance.now();
 
+
+                this.ringsStartColor = [250, 252, 252];
+                //this.ringsEndColor = [200, 250, 255];
+                this.ringsEndColor = this.color.split(',').map(Number).map(n => (n + 255 * 2) / 3);
+
                 this.initCanvas();
                 this.bindEvents();
                 requestAnimationFrame((now) => this.animationLoops(now));
@@ -229,8 +234,6 @@
                     // ==End-整合的数据==
 
                     maxLife: 23,
-                    startColor: [250, 252, 252],
-                    endColor: [200, 250, 255],
                     segNum: 16,                 // 拆成的段数
                     minW: 0.4,                  // 最小宽度
                     maxW: 3.3,                    // 最大宽度
@@ -311,9 +314,9 @@
                         }
                         function getColor(rProg) {
                             const t = Math.min(1.2 * rProg, 1);
-                            const r = ringsConfig.startColor[0] * (1 - t) + ringsConfig.endColor[0] * t;
-                            const g = ringsConfig.startColor[1] * (1 - t) + ringsConfig.endColor[1] * t;
-                            const b = ringsConfig.startColor[2] * (1 - t) + ringsConfig.endColor[2] * t;
+                            const r = this.ringsStartColor[0] * (1 - t) + this.ringsEndColor[0] * t;
+                            const g = this.ringsStartColor[1] * (1 - t) + this.ringsEndColor[1] * t;
+                            const b = this.ringsStartColor[2] * (1 - t) + this.ringsEndColor[2] * t;
                             return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}`;
                         }
                         function getAlpha(rProg) {
@@ -344,7 +347,7 @@
                             seg = r.segs[i];
 
                             base = r.ang + seg.off;
-                            
+
                             if (rProg <= ringsConfig.lenStopAddPoint) {
                                 // 前段：终点固定，起点逆时针延伸
                                 len = seg.len * (rProg / ringsConfig.lenStopAddPoint);
@@ -372,13 +375,13 @@
                                 a1 = start + (end - start) * t1;        // 终止子位置  （？
 
                                 if (Math.abs(a1 - a0) < 0.01) continue;
-                                
+
                                 // 光弧
                                 let wT = getWeightProp(t0);
                                 this.bufferCtx.beginPath();
                                 this.bufferCtx.arc(w.x, w.y, w.r + seg.rRoundRate * this.scale, a0, a1);
                                 this.bufferCtx.lineWidth = (ringsConfig.minW * (1 - wT) + ringsConfig.maxW * wT) * Math.min((-0.8 * (rProg - 0.8) + 1), 1); // 看不懂了（？）
-                                this.bufferCtx.strokeStyle = `${getColor(rProg)}, ${getAlpha(rProg)})`;
+                                this.bufferCtx.strokeStyle = `${getColor.call(this, rProg)}, ${getAlpha(rProg)})`;
                                 this.bufferCtx.stroke();
                             }
                         }
@@ -506,7 +509,10 @@
         };
 
         window.updateColor = (rgbString) => {
-            if (window.spark) window.spark.color = rgbString;
+            if (window.spark) {
+                window.spark.color = rgbString;
+                window.spark.ringsEndColor = rgbString.split(',').map(Number).map(n => (n + 255 * 2) / 3);
+            }
         };
 
         window.updateEffectSettings = (scale, opacity, trailSpeed, clickSpeed) => {
